@@ -43,6 +43,19 @@ public struct ReminderList: Identifiable, Codable, Sendable, Equatable {
   }
 }
 
+/// Represents a participant/assignee on a reminder
+public struct ReminderParticipant: Codable, Sendable, Equatable {
+  public let name: String?
+  public let email: String?
+  public let isCurrentUser: Bool
+
+  public init(name: String?, email: String?, isCurrentUser: Bool) {
+    self.name = name
+    self.email = email
+    self.isCurrentUser = isCurrentUser
+  }
+}
+
 public struct ReminderItem: Identifiable, Codable, Sendable, Equatable {
   public let id: String
   public let title: String
@@ -53,6 +66,7 @@ public struct ReminderItem: Identifiable, Codable, Sendable, Equatable {
   public let dueDate: Date?
   public let listID: String
   public let listName: String
+  public let assignee: ReminderParticipant?
 
   public init(
     id: String,
@@ -63,7 +77,8 @@ public struct ReminderItem: Identifiable, Codable, Sendable, Equatable {
     priority: ReminderPriority,
     dueDate: Date?,
     listID: String,
-    listName: String
+    listName: String,
+    assignee: ReminderParticipant? = nil
   ) {
     self.id = id
     self.title = title
@@ -74,6 +89,7 @@ public struct ReminderItem: Identifiable, Codable, Sendable, Equatable {
     self.dueDate = dueDate
     self.listID = listID
     self.listName = listName
+    self.assignee = assignee
   }
 }
 

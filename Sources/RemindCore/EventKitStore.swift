@@ -113,7 +113,8 @@ public actor RemindersStore {
       priority: ReminderPriority(eventKitValue: Int(reminder.priority)),
       dueDate: date(from: reminder.dueDateComponents),
       listID: reminder.calendar.calendarIdentifier,
-      listName: reminder.calendar.title
+      listName: reminder.calendar.title,
+      assignee: Self.extractAssignee(from: reminder)
     )
   }
 
@@ -154,7 +155,8 @@ public actor RemindersStore {
       priority: ReminderPriority(eventKitValue: Int(reminder.priority)),
       dueDate: date(from: reminder.dueDateComponents),
       listID: reminder.calendar.calendarIdentifier,
-      listName: reminder.calendar.title
+      listName: reminder.calendar.title,
+      assignee: Self.extractAssignee(from: reminder)
     )
   }
 
@@ -174,7 +176,8 @@ public actor RemindersStore {
           priority: ReminderPriority(eventKitValue: Int(reminder.priority)),
           dueDate: date(from: reminder.dueDateComponents),
           listID: reminder.calendar.calendarIdentifier,
-          listName: reminder.calendar.title
+          listName: reminder.calendar.title,
+          assignee: Self.extractAssignee(from: reminder)
         )
       )
     }
@@ -214,6 +217,7 @@ public actor RemindersStore {
       let dueDateComponents: DateComponents?
       let listID: String
       let listName: String
+      let assignee: ReminderParticipant?
     }
 
     let reminderData = await withCheckedContinuation { (continuation: CheckedContinuation<[ReminderData], Never>) in
@@ -229,7 +233,8 @@ public actor RemindersStore {
             priority: Int(reminder.priority),
             dueDateComponents: reminder.dueDateComponents,
             listID: reminder.calendar.calendarIdentifier,
-            listName: reminder.calendar.title
+            listName: reminder.calendar.title,
+            assignee: Self.extractAssignee(from: reminder)
           )
         }
         continuation.resume(returning: data)
@@ -246,9 +251,32 @@ public actor RemindersStore {
         priority: ReminderPriority(eventKitValue: data.priority),
         dueDate: date(from: data.dueDateComponents),
         listID: data.listID,
-        listName: data.listName
+        listName: data.listName,
+        assignee: data.assignee
       )
     }
+  }
+
+  /// Extracts the assignee from a reminder's attendees list.
+  /// Note: Apple's EventKit currently does not expose assignment information
+  /// for shared reminder lists through the attendees property. This method
+  /// is implemented for API completeness and future compatibility.
+  private static func extractAssignee(from reminder: EKReminder) -> ReminderParticipant? {
+    guard let attendees = reminder.attendees, !attendees.isEmpty else {
+      return nil
+    }
+    // If there are attendees, return the first one as the assignee
+    // (typically the assigned person on a shared list)
+    if let attendee = attendees.first {
+      // Extract email from URL (format: mailto:email@example.com)
+      let email = attendee.url.absoluteString.replacingOccurrences(of: "mailto:", with: "")
+      return ReminderParticipant(
+        name: attendee.name,
+        email: email.isEmpty ? nil : email,
+        isCurrentUser: attendee.isCurrentUser
+      )
+    }
+    return nil
   }
 
   private func reminder(withID id: String) throws -> EKReminder {
@@ -285,7 +313,8 @@ public actor RemindersStore {
       priority: ReminderPriority(eventKitValue: Int(reminder.priority)),
       dueDate: date(from: reminder.dueDateComponents),
       listID: reminder.calendar.calendarIdentifier,
-      listName: reminder.calendar.title
+      listName: reminder.calendar.title,
+      assignee: Self.extractAssignee(from: reminder)
     )
   }
 }
